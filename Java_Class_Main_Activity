@@ -1,0 +1,928 @@
+//Authors: Kyle Hilkin, Tevin Holliday
+//IS3920: Group Project
+//Date: 11/30/16
+//Descrip: Java class controls main activity that runs
+//         a blackjack game.
+
+package com.example.kylehilkin.blackjack;
+
+import android.app.AlertDialog.Builder;
+import android.content.Context;
+import android.content.DialogInterface;
+import android.content.Intent;
+import android.content.SharedPreferences;
+import android.os.Bundle;
+import android.preference.PreferenceManager;
+import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.view.ViewGroup.LayoutParams;
+import android.view.animation.AnimationUtils;
+import android.view.inputmethod.InputMethodManager;
+import android.widget.Button;
+import android.widget.EditText;
+import android.widget.ImageSwitcher;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
+import android.widget.SeekBar;
+import android.widget.SeekBar.OnSeekBarChangeListener;
+import android.widget.TextView;
+import android.widget.Toast;
+import android.widget.ViewSwitcher.ViewFactory;
+
+import java.util.ArrayList;
+import java.util.Random;
+
+public class BlackJack extends AppCompatActivity implements OnClickListener,
+        OnSeekBarChangeListener, ViewFactory {
+
+    public static LinearLayout layout;
+
+    //initialize and declare everything
+    public TextView Money;
+    public TextView DealerScore;
+    public TextView YourScore;
+    public TextView Bet;
+
+    private ImageSwitcher DealerCard1;
+    private ImageSwitcher DealerCard2;
+    private ImageSwitcher DealerCard3;
+    private ImageSwitcher DealerCard4;
+    private ImageSwitcher DealerCard5;
+    private ImageSwitcher DealerCard6;
+
+    private ImageSwitcher YourCard1;
+    private ImageSwitcher YourCard2;
+    private ImageSwitcher YourCard3;
+    private ImageSwitcher YourCard4;
+    private ImageSwitcher YourCard5;
+    private ImageSwitcher YourCard6;
+
+    public Button PlaceBet;
+    public Button Hit;
+    public Button Stand;
+    public Button Surrender;
+    public SeekBar BetAmount;
+
+    //local variables
+    static int money = 0;
+    public int bet = 0;
+    public int dealerScore = 0;
+    public int playerScore = 0;
+    public int dealerCardNumber = 0;
+    public int playerCardNumber = 0;
+    public int randomNumber;
+    public int dealerNumber;
+
+    public Button Buyin;
+    public EditText EditBuyin;
+
+    //used to make sure no card comes twice
+    ArrayList<Integer> CardsTracking = new ArrayList<Integer>();
+
+    //dealer and Player Aces Check
+    char[] dealerCardArray = new char[]{'0', '0', '0', '0', '0', '0'};
+    char[] playerCardArray = new char[]{'0', '0', '0', '0', '0', '0'};
+
+    //dealer and Player Score Count
+    int[] dealerScoreCount = new int[]{0, 0, 0, 0, 0,0};
+    int[] playerScoreCount = new int[]{0, 0, 0, 0, 0,0};
+
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.main_activity);
+
+        setupVariables();
+
+        imageSwitcher();
+
+        //starting values
+        money = 0;
+        Money.setText(" $ " + money);
+        BetAmount.setMax(money);
+        hidePlayButtons();
+
+        Button b = (Button) findViewById(R.id.Help);
+
+        b.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+
+                Intent instruct = new Intent(BlackJack.this, Pop.class);
+
+                startActivity(instruct);
+            }
+        });
+
+        Buyin = (Button)findViewById(R.id.Buyin);
+        EditBuyin  = (EditText)findViewById(R.id.EditBuyin);
+
+        Buyin.setOnClickListener(
+                new View.OnClickListener()
+                {
+                    public void onClick(View view)
+                    {
+                        Log.v("EditText", EditBuyin.getText().toString());
+
+                        String buyinA = EditBuyin.getText().toString();
+
+                        updateBank(buyinA);
+
+                        EditBuyin.setText("");
+
+                        EditBuyin.clearFocus();
+
+                        InputMethodManager mgr = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+                        mgr.hideSoftInputFromWindow(EditBuyin.getWindowToken(), 0);
+                    }
+
+                });
+    }
+
+    private void imageSwitcher() {
+
+        DealerCard1.setFactory(this);
+        DealerCard2.setFactory(this);
+        DealerCard3.setFactory(this);
+        DealerCard4.setFactory(this);
+        DealerCard5.setFactory(this);
+        DealerCard6.setFactory(this);
+
+        YourCard1.setFactory(this);
+        YourCard2.setFactory(this);
+        YourCard3.setFactory(this);
+        YourCard4.setFactory(this);
+        YourCard5.setFactory(this);
+        YourCard6.setFactory(this);
+
+        DealerCard1.setInAnimation(AnimationUtils.loadAnimation(this,
+                android.R.anim.slide_in_left));
+        DealerCard1.setOutAnimation(AnimationUtils.loadAnimation(this,
+                android.R.anim.slide_out_right));
+
+        DealerCard2.setInAnimation(AnimationUtils.loadAnimation(this,
+                android.R.anim.slide_in_left));
+        DealerCard2.setOutAnimation(AnimationUtils.loadAnimation(this,
+                android.R.anim.slide_out_right));
+
+        DealerCard3.setInAnimation(AnimationUtils.loadAnimation(this,
+                android.R.anim.slide_in_left));
+        DealerCard3.setOutAnimation(AnimationUtils.loadAnimation(this,
+                android.R.anim.slide_out_right));
+
+        DealerCard4.setInAnimation(AnimationUtils.loadAnimation(this,
+                android.R.anim.slide_in_left));
+        DealerCard4.setOutAnimation(AnimationUtils.loadAnimation(this,
+                android.R.anim.slide_out_right));
+
+        DealerCard5.setInAnimation(AnimationUtils.loadAnimation(this,
+                android.R.anim.slide_in_left));
+        DealerCard5.setOutAnimation(AnimationUtils.loadAnimation(this,
+                android.R.anim.slide_out_right));
+
+        DealerCard6.setInAnimation(AnimationUtils.loadAnimation(this,
+                android.R.anim.slide_in_left));
+        DealerCard6.setOutAnimation(AnimationUtils.loadAnimation(this,
+                android.R.anim.slide_out_right));
+
+        YourCard1.setInAnimation(AnimationUtils.loadAnimation(this,
+                android.R.anim.slide_in_left));
+        YourCard1.setOutAnimation(AnimationUtils.loadAnimation(this,
+                android.R.anim.slide_out_right));
+
+        YourCard2.setInAnimation(AnimationUtils.loadAnimation(this,
+                android.R.anim.slide_in_left));
+        YourCard2.setOutAnimation(AnimationUtils.loadAnimation(this,
+                android.R.anim.slide_out_right));
+
+        YourCard3.setInAnimation(AnimationUtils.loadAnimation(this,
+                android.R.anim.slide_in_left));
+        YourCard3.setOutAnimation(AnimationUtils.loadAnimation(this,
+                android.R.anim.slide_out_right));
+
+        YourCard4.setInAnimation(AnimationUtils.loadAnimation(this,
+                android.R.anim.slide_in_left));
+        YourCard4.setOutAnimation(AnimationUtils.loadAnimation(this,
+                android.R.anim.slide_out_right));
+
+        YourCard5.setInAnimation(AnimationUtils.loadAnimation(this,
+                android.R.anim.slide_in_left));
+        YourCard5.setOutAnimation(AnimationUtils.loadAnimation(this,
+                android.R.anim.slide_out_right));
+
+        YourCard6.setInAnimation(AnimationUtils.loadAnimation(this,
+                android.R.anim.slide_in_left));
+        YourCard6.setOutAnimation(AnimationUtils.loadAnimation(this,
+                android.R.anim.slide_out_right));
+    }
+
+    private void resetEveryThing() {
+
+        DealerCard1.setImageResource(R.drawable.square);
+        DealerCard2.setImageResource(R.drawable.square);
+        DealerCard3.setImageResource(R.drawable.square);
+        DealerCard4.setImageResource(R.drawable.square);
+        DealerCard5.setImageResource(R.drawable.square);
+        DealerCard6.setImageResource(R.drawable.square);
+
+        YourCard1.setImageResource(R.drawable.square);
+        YourCard2.setImageResource(R.drawable.square);
+        YourCard3.setImageResource(R.drawable.square);
+        YourCard4.setImageResource(R.drawable.square);
+        YourCard5.setImageResource(R.drawable.square);
+        YourCard6.setImageResource(R.drawable.square);
+
+        PlaceBet.setVisibility(View.VISIBLE);
+        hidePlayButtons();
+        dealerCardNumber = 0;
+        playerCardNumber = 0;
+        dealerScore = 0;
+        playerScore = 0;
+        CardsTracking.clear();
+
+        for (int i = 0; i < 6; i++) {
+            dealerCardArray[i] = '0';
+            dealerScoreCount[i] = 0;
+            playerCardArray[i] = '0';
+            playerScoreCount[i] = 0;
+        }
+
+        //set max bet to bankroll amount
+        BetAmount.setMax(money);
+
+        showTextViews();
+
+        //player is broke
+        if (money <= 0) {
+            Toast.makeText(BlackJack.this, "Add more money to play!",
+                    Toast.LENGTH_LONG).show();
+        }
+
+    }
+
+    //setup variables
+    private void setupVariables() {
+
+        layout = (LinearLayout) findViewById(R.id.parentLayout);
+
+        Money = (TextView) findViewById(R.id.Money);
+        DealerScore = (TextView) findViewById(R.id.Dealer);
+        YourScore = (TextView) findViewById(R.id.You);
+        Bet = (TextView) findViewById(R.id.Bet);
+
+        DealerCard1 = (ImageSwitcher) findViewById(R.id.DealerCard1);
+        DealerCard2 = (ImageSwitcher) findViewById(R.id.DealerCard2);
+        DealerCard3 = (ImageSwitcher) findViewById(R.id.DealerCard3);
+        DealerCard4 = (ImageSwitcher) findViewById(R.id.DealerCard4);
+        DealerCard5 = (ImageSwitcher) findViewById(R.id.DealerCard5);
+        DealerCard6 = (ImageSwitcher) findViewById(R.id.DealerCard6);
+
+
+        YourCard1 = (ImageSwitcher) findViewById(R.id.YourCard1);
+        YourCard2 = (ImageSwitcher) findViewById(R.id.YourCard2);
+        YourCard3 = (ImageSwitcher) findViewById(R.id.YourCard3);
+        YourCard4 = (ImageSwitcher) findViewById(R.id.YourCard4);
+        YourCard5 = (ImageSwitcher) findViewById(R.id.YourCard5);
+        YourCard6 = (ImageSwitcher) findViewById(R.id.YourCard6);
+
+        Hit = (Button) findViewById(R.id.Hit);
+        Stand = (Button) findViewById(R.id.Stand);
+        Surrender = (Button) findViewById(R.id.Surrender);
+
+        Hit.setOnClickListener(this);
+        Stand.setOnClickListener(this);
+        Surrender.setOnClickListener(this);
+
+        PlaceBet = (Button) findViewById(R.id.PlaceBet);
+        PlaceBet.setOnClickListener(this);
+        Button Exit = (Button) findViewById(R.id.Exit);
+        Exit.setOnClickListener(this);
+        Button Help = (Button) findViewById(R.id.Help);
+        Help.setOnClickListener(this);
+
+        BetAmount = (SeekBar) findViewById(R.id.BetAmount);
+        BetAmount.setOnSeekBarChangeListener(this);
+    }
+
+    public void onClick(View v) {
+
+        if (playerCardNumber > 5 || dealerCardNumber > 5) {
+            return;
+        }
+
+        switch (v.getId()) {
+
+            case R.id.PlaceBet:
+
+                if (bet > 0) {
+                    money -= bet;
+
+                    showPlayButtons();
+                    PlaceBet.setVisibility(View.INVISIBLE);
+                    gameStart();
+                } else {
+                    Toast.makeText(BlackJack.this, "Bet Some Money First",
+                            Toast.LENGTH_SHORT).show();
+                }
+
+                break;
+
+            //Hit
+            case R.id.Hit:
+
+                HitClick();
+                break;
+
+            //Stand
+            case R.id.Stand:
+
+                StandClick();
+                break;
+
+            case R.id.Surrender:
+
+                //Surrender
+                money += bet / 2;
+                Toast.makeText(BlackJack.this,
+                        "You Surrendered, You got half of your money back.",
+                        Toast.LENGTH_SHORT).show();
+                resetEveryThing();
+                break;
+
+            case R.id.Exit:
+
+                finish();
+                break;
+        }
+
+        showTextViews();
+    }
+
+    private void gameStart() {
+
+        //opening card of dealer
+        dealerCall();
+        calculateDealerScore();
+
+        //opening 1st card of player
+        playerCall();
+
+        //opening 2nd card of Player
+        playerCall();
+        calculatePlayerScore();
+
+        DealerCard2.setImageResource(R.drawable.default_blue);
+
+        //check for BlackJack
+        if (playerScore == 21) {
+            blackJack();
+        }
+    }
+
+    private void showTextViews() {
+
+        Money.setText(" $ " + money);
+        Bet.setText("Bet - $ " + bet);
+        DealerScore.setText("Dealer's Score : " + dealerScore);
+        YourScore.setText("Your Score : " + playerScore);
+
+    }
+
+    private void hidePlayButtons() {
+
+        Hit.setVisibility(View.INVISIBLE);
+        Stand.setVisibility(View.INVISIBLE);
+        Surrender.setVisibility(View.INVISIBLE);
+
+        BetAmount.setVisibility(View.VISIBLE);
+    }
+
+    private void showPlayButtons() {
+
+        Hit.setVisibility(View.VISIBLE);
+        Stand.setVisibility(View.VISIBLE);
+        Surrender.setVisibility(View.VISIBLE);
+
+        BetAmount.setVisibility(View.INVISIBLE);
+    }
+
+    public char cardsCalling(int cardNumberFromRandom, ImageSwitcher imageView) {
+
+        //card number order: A,2,3,4,5,6,7,8,9,10,J,Q,K
+        //card names: A, K, Q, J, T, 9, 8, 7, 6, 5, 4, 3, 2
+        //clubs
+        switch (cardNumberFromRandom) {
+            case 0:
+                imageView.setImageResource(R.drawable.c1);
+                return 'A';
+            case 1:
+                imageView.setImageResource(R.drawable.c2);
+                return '2';
+            case 2:
+                imageView.setImageResource(R.drawable.c3);
+                return '3';
+            case 3:
+                imageView.setImageResource(R.drawable.c4);
+                return '4';
+            case 4:
+                imageView.setImageResource(R.drawable.c5);
+                return '5';
+            case 5:
+                imageView.setImageResource(R.drawable.c6);
+                return '6';
+            case 6:
+                imageView.setImageResource(R.drawable.c7);
+                return '7';
+            case 7:
+                imageView.setImageResource(R.drawable.c8);
+                return '8';
+            case 8:
+                imageView.setImageResource(R.drawable.c9);
+                return '9';
+            case 9:
+                imageView.setImageResource(R.drawable.c10);
+                return 'T';
+            case 10:
+                imageView.setImageResource(R.drawable.cj);
+                return 'J';
+            case 11:
+                imageView.setImageResource(R.drawable.cq);
+                return 'Q';
+            case 12:
+                imageView.setImageResource(R.drawable.ck);
+                return 'K';
+
+            //diamonds
+            case 13:
+                imageView.setImageResource(R.drawable.d1);
+                return 'A';
+            case 14:
+                imageView.setImageResource(R.drawable.d2);
+                return '2';
+            case 15:
+                imageView.setImageResource(R.drawable.d3);
+                return '3';
+            case 16:
+                imageView.setImageResource(R.drawable.d4);
+                return '4';
+            case 17:
+                imageView.setImageResource(R.drawable.d5);
+                return '5';
+            case 18:
+                imageView.setImageResource(R.drawable.d6);
+                return '6';
+            case 19:
+                imageView.setImageResource(R.drawable.d7);
+                return '7';
+            case 20:
+                imageView.setImageResource(R.drawable.d8);
+                return '8';
+            case 21:
+                imageView.setImageResource(R.drawable.d9);
+                return '9';
+            case 22:
+                imageView.setImageResource(R.drawable.d10);
+                return 'T';
+            case 23:
+                imageView.setImageResource(R.drawable.dj);
+                return 'J';
+            case 24:
+                imageView.setImageResource(R.drawable.dq);
+                return 'Q';
+            case 25:
+                imageView.setImageResource(R.drawable.dk);
+                return 'K';
+
+            //hearts
+            case 26:
+                imageView.setImageResource(R.drawable.h1);
+                return 'A';
+            case 27:
+                imageView.setImageResource(R.drawable.h2);
+                return '2';
+            case 28:
+                imageView.setImageResource(R.drawable.h3);
+                return '3';
+            case 29:
+                imageView.setImageResource(R.drawable.h4);
+                return '4';
+            case 30:
+                imageView.setImageResource(R.drawable.h5);
+                return '5';
+            case 31:
+                imageView.setImageResource(R.drawable.h6);
+                return '6';
+            case 32:
+                imageView.setImageResource(R.drawable.h7);
+                return '7';
+            case 33:
+                imageView.setImageResource(R.drawable.h8);
+                return '8';
+            case 34:
+                imageView.setImageResource(R.drawable.h9);
+                return '9';
+            case 35:
+                imageView.setImageResource(R.drawable.h10);
+                return 'T';
+            case 36:
+                imageView.setImageResource(R.drawable.hj);
+                return 'J';
+            case 37:
+                imageView.setImageResource(R.drawable.hq);
+                return 'Q';
+            case 38:
+                imageView.setImageResource(R.drawable.hk);
+                return 'K';
+
+            //spades
+            case 39:
+                imageView.setImageResource(R.drawable.s1);
+                return 'A';
+            case 40:
+                imageView.setImageResource(R.drawable.s2);
+                return '2';
+            case 41:
+                imageView.setImageResource(R.drawable.s3);
+                return '3';
+            case 42:
+                imageView.setImageResource(R.drawable.s4);
+                return '4';
+            case 43:
+                imageView.setImageResource(R.drawable.s5);
+                return '5';
+            case 44:
+                imageView.setImageResource(R.drawable.s6);
+                return '6';
+            case 45:
+                imageView.setImageResource(R.drawable.s7);
+                return '7';
+            case 46:
+                imageView.setImageResource(R.drawable.s8);
+                return '8';
+            case 47:
+                imageView.setImageResource(R.drawable.s9);
+                return '9';
+            case 48:
+                imageView.setImageResource(R.drawable.s10);
+                return 'T';
+            case 49:
+                imageView.setImageResource(R.drawable.sj);
+                return 'J';
+            case 50:
+                imageView.setImageResource(R.drawable.sq);
+                return 'Q';
+            case 51:
+                imageView.setImageResource(R.drawable.sk);
+                return 'K';
+
+            default:
+
+                return 0;
+        }
+
+    }
+
+    public void dealerCall() {
+
+        //to make sure no card comes twice
+        do {
+            Random _random = new Random();
+            randomNumber = _random.nextInt(52);
+        } while (CardsTracking.contains(randomNumber));
+        CardsTracking.add(randomNumber);
+
+        //deal cards for dealer
+        switch (dealerCardNumber) {
+            case 0:
+                dealerCardArray[dealerCardNumber] = cardsCalling(randomNumber,
+                        DealerCard1);
+                break;
+            case 1:
+                dealerCardArray[dealerCardNumber] = cardsCalling(randomNumber,
+                        DealerCard2);
+                break;
+            case 2:
+                dealerCardArray[dealerCardNumber] = cardsCalling(randomNumber,
+                        DealerCard3);
+                break;
+            case 3:
+                dealerCardArray[dealerCardNumber] = cardsCalling(randomNumber,
+                        DealerCard4);
+                break;
+            case 4:
+                dealerCardArray[dealerCardNumber] = cardsCalling(randomNumber,
+                        DealerCard5);
+                break;
+            case 5:
+                dealerCardArray[dealerCardNumber] = cardsCalling(randomNumber,
+                        DealerCard6);
+                break;
+        }
+
+        dealerNumber = randomNumber;
+        dealerScoreCount[dealerCardNumber] = getIntValueFromCard(dealerCardArray[dealerCardNumber]);
+        dealerCardNumber++;
+
+    }
+
+    public void playerCall() {
+
+        //to make sure no card comes twice
+        do {
+            Random _random = new Random();
+            randomNumber = _random.nextInt(52);
+        } while (CardsTracking.contains(randomNumber));
+        CardsTracking.add(randomNumber);
+
+        //deal cards for player
+        switch (playerCardNumber) {
+            case 0:
+                playerCardArray[playerCardNumber] = cardsCalling(randomNumber,
+                        YourCard1);
+                break;
+            case 1:
+                playerCardArray[playerCardNumber] = cardsCalling(randomNumber,
+                        YourCard2);
+                break;
+            case 2:
+                playerCardArray[playerCardNumber] = cardsCalling(randomNumber,
+                        YourCard3);
+                break;
+            case 3:
+                playerCardArray[playerCardNumber] = cardsCalling(randomNumber,
+                        YourCard4);
+                break;
+            case 4:
+                playerCardArray[playerCardNumber] = cardsCalling(randomNumber,
+                        YourCard5);
+                break;
+            case 5:
+                playerCardArray[playerCardNumber] = cardsCalling(randomNumber,
+                        YourCard6);
+                break;
+        }
+        playerScoreCount[playerCardNumber] = getIntValueFromCard(playerCardArray[playerCardNumber]);
+        playerCardNumber++;
+    }
+
+    public void calculateDealerScore() {
+
+        int j = 0;
+        for (int i = 0; i < 6; i++) {
+            j += dealerScoreCount[i];
+        }
+        dealerScore = j;
+        DealerScore.setText("Dealer's Score : " + dealerScore);
+    }
+
+    public void calculatePlayerScore() {
+
+        int j = 0;
+        for (int i = 0; i < 6; i++) {
+            j += playerScoreCount[i];
+        }
+        playerScore = j;
+        YourScore.setText("Your Score : " + playerScore);
+
+    }
+
+    public void youLose() {
+        bet = 0;
+        Toast.makeText(BlackJack.this, "You Lose !!!",
+                Toast.LENGTH_LONG).show();
+
+        alertBox();
+    }
+
+    public void youWon() {
+        money += bet * 2;
+
+        bet = 0;
+        Toast.makeText(BlackJack.this, "You Won !!!",
+                Toast.LENGTH_SHORT).show();
+
+        alertBox();
+    }
+
+
+
+    public void blackJack() {
+        money += ((bet * 2) + (bet/2));
+        bet = 0;
+        Toast.makeText(BlackJack.this, "You Hit BLACKJACK! You win big !!!",
+                Toast.LENGTH_LONG).show();
+
+        alertBox();
+    }
+
+    public int getIntValueFromCard(char card) {
+
+        switch (card) {
+            case 'A':
+                return 11;
+            case 'K':
+                return 10;
+            case 'Q':
+                return 10;
+            case 'J':
+                return 10;
+            case 'T':
+                return 10;
+            case '9':
+                return 9;
+            case '8':
+                return 8;
+            case '7':
+                return 7;
+            case '6':
+                return 6;
+            case '5':
+                return 5;
+            case '4':
+                return 4;
+            case '3':
+                return 3;
+            case '2':
+                return 2;
+            default:
+                return 0;
+
+        }
+    }
+
+    private void HitClick() {
+
+        playerCall();
+        calculatePlayerScore();
+
+        //aces count as 1
+        if (playerScore > 21) {
+            for (int i = 0; i < 6; i++) {
+                if (playerCardArray[i] == 'A' && playerScoreCount[i] == 11) {
+                    playerScoreCount[i] = 1;
+                    Toast.makeText(BlackJack.this,
+                            "Aces will be count as 1", Toast.LENGTH_LONG)
+                            .show();
+                    break;
+                }
+            }
+            calculatePlayerScore();
+        }
+
+        //if player has no aces
+        if (playerScore > 21) {
+            youLose();
+            showTextViews();
+        }
+
+        if (playerCardNumber >= 6 && playerScore < 22) {
+
+            StandClick();
+
+        }
+
+    }
+
+    public void StandClick() {
+        //prompts computers deal
+        do {
+            //opening 1st Card of Dealer
+            dealerCall();
+            calculateDealerScore();
+
+            //aces count as 1
+            if (dealerScore > 21) {
+                for (int i = 0; i < 6; i++) {
+                    if (dealerCardArray[i] == 'A'
+                            && dealerScoreCount[i] == 11) {
+                        dealerScoreCount[i] = 1;
+                        break;
+                    }
+                }
+                calculateDealerScore();
+            }
+
+        } while (dealerScore < 17 && dealerScore <= playerScore
+                && dealerCardNumber < 6);
+
+        if (dealerScore > 21) {
+            youWon();
+        } else {
+            checkWin();
+        }
+
+        if (dealerCardNumber >= 6) {
+            checkWin();
+        }
+
+
+
+    }
+
+    public void checkWin() {
+        if (dealerScore > playerScore) {
+            youLose();
+
+        }
+        else if (playerScore > dealerScore) {
+            youWon();
+        }
+        else if (playerScore == dealerScore){
+            money += bet;
+            alertBox();
+            Toast.makeText(BlackJack.this, "Game Drawn!!!",
+                    Toast.LENGTH_SHORT).show();
+        }
+
+    }
+
+    public void alertBox() {
+
+        final Builder alert = new Builder(this);
+        alert.setCancelable(false);
+        String message = "Play Again";
+        String positive = "Next Hand";
+
+        final String finalMessage = message;
+        final String finalPositive = positive;
+        Thread t = new Thread() {
+            public void run() {
+
+                runOnUiThread(new Runnable() {
+                    public void run() {
+
+                        alert.setMessage(finalMessage);
+                        alert.setPositiveButton(finalPositive,
+                                new DialogInterface.OnClickListener() {
+
+                                    public void onClick(DialogInterface dialog,
+                                                        int which) {
+
+                                            resetEveryThing();
+                                            hidePlayButtons();
+
+                                            SharedPreferences prefs = PreferenceManager
+                                                    .getDefaultSharedPreferences(getApplicationContext());
+                                    }
+                                });
+                        alert.show();
+                    }
+                });
+            }
+        };
+        t.start();
+
+    }
+
+    //use set bar to determine bet
+    public void onProgressChanged(SeekBar seekBar, int progress,
+                                  boolean fromUser) {
+
+        bet = progress;
+        Bet.setText("Bet - $ " + bet);
+    }
+
+    public void onStartTrackingTouch(SeekBar seekBar) {
+
+    }
+
+    public void onStopTrackingTouch(SeekBar seekBar) {
+    }
+
+    public View makeView() {
+        ImageView iView = new ImageView(this);
+        iView.setScaleType(ImageView.ScaleType.FIT_CENTER);
+        iView.setLayoutParams(new ImageSwitcher.LayoutParams(
+                LayoutParams.FILL_PARENT, LayoutParams.FILL_PARENT));
+        return iView;
+    }
+
+    //allow/disallow adding of more money
+    public void updateBank(String buyinA)
+    {
+        calculatePlayerScore();
+
+        if(!buyinA.isEmpty() && playerScore == 0) {
+
+            int result = Integer.parseInt(buyinA);
+
+            money = money + result;
+
+            Toast.makeText(BlackJack.this, "You added $" + result,
+                    Toast.LENGTH_SHORT).show();
+
+            resetEveryThing();
+
+        }
+        else if(buyinA.isEmpty()){
+            Toast.makeText(BlackJack.this, "Enter amount first",
+                    Toast.LENGTH_SHORT).show();
+        }
+        else if(playerScore != 0){
+            Toast.makeText(BlackJack.this, "Request Denied. Wait till end of deal to rebuy",
+                    Toast.LENGTH_SHORT).show();
+        }
+    }
+}
