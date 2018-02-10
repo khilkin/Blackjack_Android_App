@@ -3,4 +3,4 @@ Blackjack game created for a project within the course Application Development I
 The three files included within this repository are: 
 + Java class for main activity 
 + XML layout file for the main activity
-+ In game screenshot
++ In-game screenshot
